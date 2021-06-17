@@ -1,0 +1,52 @@
+pipeline {
+    agent any
+    stages {
+        stage('CheckOut') {
+            steps {
+                // Get code from a GitHub repository
+                git branch: 'master',
+				credentialsId: 'deba1928',
+				url: 'git@github.com:deba1928/jenkins-tutorial.git'           
+			}
+
+        }
+		stage('Clean') {
+            steps {
+                // Clean Project
+                sh 'mvn clean'
+            }
+        }
+		stage('Build') {
+            steps {
+                // Build Project
+                sh 'mvn package'
+            }
+        }
+		stage('Email') {
+            steps {
+				// Deploy To Tomcat server
+				mail to: 'deba1928@gmail.com',
+				subject: "Job '${JOB_NAME}' (${BUILD_NUMBER}) is waiting for input",
+				body: "Please go to ${BUILD_URL} and verify the build"
+				
+            }
+
+        }
+        stage('Archive') {
+            //Take a backup of all jar or war
+            steps {
+			    archiveArtifacts artifacts: 'target/*.war', followSymlinks: false, onlyIfSuccessful: true
+            }
+
+        }
+		stage('Deploy') {
+            steps {
+				// Send Email
+				deploy adapters: [tomcat8(credentialsId: 'Tomcat-User', path: '', url: 'http://192.168.1.103:8080/')], contextPath: null, war: 'target/roster-v1.war'
+				               
+            }
+
+        }
+		
+    }
+}
